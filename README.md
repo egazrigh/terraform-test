@@ -1,2 +1,4 @@
-"# terraform-test" 
-"# terraform-test" 
+# terraform-test
+
+Repo for Terraform testing purpose
+
