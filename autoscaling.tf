@@ -2,7 +2,7 @@ provider "aws" {
   region = "eu-west-3"
 }
 
-resource "aws_instance" "terraferic" {
+resource "aws_launch_configuration" "terraferic" {
   ami = "ami-0e55e373" #Ubuntu
 
   #ami = "ami-4f55e332" #Amazon Linux
@@ -20,6 +20,9 @@ resource "aws_instance" "terraferic" {
     Env     = "Test"
     Billing = "Someone Else"
   }
+  lifecycle {
+    create_before_destroy = true
+  }
 }
 
 resource "aws_security_group" "instance" {
@@ -31,6 +34,9 @@ resource "aws_security_group" "instance" {
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
+  lifecycle {
+    create_before_destroy = true
+  
 }
 
 variable "server_port" {
