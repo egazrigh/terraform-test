@@ -15,7 +15,7 @@ resource "aws_autoscaling_group" "my-asg" {
 
   tag {
     key                 = "Name"
-    value               = "asg-deployed-by-terraform"
+    value               = "web-server-instance-deployed-by-terraform"
     propagate_at_launch = true
   }
 }
@@ -23,7 +23,7 @@ resource "aws_autoscaling_group" "my-asg" {
 resource "aws_elb" "my-elb" {
   name               = "elb-deployed-by-terraform"
   availability_zones = ["${data.aws_availability_zones.all.names}"]
-  security_groups    = ["${aws_security_group.for-elb-sg.id}"]
+  security_groups    = ["${aws_security_group.elb_sg.id}"]
 
   listener {
     lb_port           = 80
@@ -40,8 +40,6 @@ resource "aws_elb" "my-elb" {
     target              = "HTTP:${var.server_port}/"
   }
 }
-
-data "aws_availability_zones" "all" {}
 
 resource "aws_launch_configuration" "my-launch-config" {
   image_id = "ami-0e55e373" #Ubuntu
@@ -61,7 +59,7 @@ resource "aws_launch_configuration" "my-launch-config" {
 }
 
 resource "aws_security_group" "servers-sg" {
-  name = "SG-for-servers-deployed-by-terraform"
+  name = "servers_sg"
 
   ingress {
     from_port   = "${var.server_port}"
@@ -76,7 +74,7 @@ resource "aws_security_group" "servers-sg" {
 }
 
 resource "aws_security_group" "servers-sg2" {
-  name = "a dummy SG just for test"
+  name = "servers_sg_dummy"
 
   ingress {
     from_port   = "81"
@@ -90,8 +88,8 @@ resource "aws_security_group" "servers-sg2" {
   }
 }
 
-resource "aws_security_group" "for-elb-sg" {
-  name = "elb-deployed-by-terraform"
+resource "aws_security_group" "elb_sg" {
+  name = "elb_sg"
 
   ingress {
     from_port   = 80
@@ -106,20 +104,4 @@ resource "aws_security_group" "for-elb-sg" {
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
-}
-
-variable "server_port" {
-  description = "The port the web server will use for http requests"
-  type        = "string"
-  default     = 8080
-}
-
-#output "public_ip" {
-#  description = "Show public IP of the instance created"
-#  value       = "${aws_instance.terraferic.public_ip}"
-#}
-
-output "elb_dns_name" {
-  description = "Show Elastic load balancer DNS name"
-  value       = "${aws_elb.my-elb.dns_name}"
 }
