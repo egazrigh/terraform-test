@@ -2,13 +2,12 @@ provider "aws" {
   region = "eu-west-3"
 }
 
-resource "aws_autoscaling_group" "terraferic-asg" {
-  launch_configuration = "${aws_launch_configuration.terraferic.id}"
+resource "aws_autoscaling_group" "my-asg" {
+  launch_configuration = "${aws_launch_configuration.my-launch-config.id}"
 
-  #launch_configuration = "terraferic"
   availability_zones = ["${data.aws_availability_zones.all.names}"]
 
-  load_balancers    = ["${aws_elb.elb-example.name}"]
+  load_balancers    = ["${aws_elb.my-elb.name}"]
   health_check_type = "ELB"
 
   min_size = 2
@@ -16,15 +15,15 @@ resource "aws_autoscaling_group" "terraferic-asg" {
 
   tag {
     key                 = "Name"
-    value               = "terraferic-asg-example"
+    value               = "asg-deployed-by-terraform"
     propagate_at_launch = true
   }
 }
 
-resource "aws_elb" "elb-example" {
-  name               = "terraform-elb-example"
+resource "aws_elb" "my-elb" {
+  name               = "elb-deployed-by-terraform"
   availability_zones = ["${data.aws_availability_zones.all.names}"]
-  security_groups    = ["${aws_security_group.elb-sg-instance.id}"]
+  security_groups    = ["${aws_security_group.for-elb-sg.id}"]
 
   listener {
     lb_port           = 80
@@ -44,25 +43,25 @@ resource "aws_elb" "elb-example" {
 
 data "aws_availability_zones" "all" {}
 
-resource "aws_launch_configuration" "terraferic" {
+resource "aws_launch_configuration" "my-launch-config" {
   image_id = "ami-0e55e373" #Ubuntu
 
-  #ami = "ami-4f55e332" #Amazon Linux
-
   instance_type   = "t2.micro"
-  security_groups = ["${aws_security_group.tf-sg-instance.id}"]
+  security_groups = ["${aws_security_group.servers-sg.id}", "${aws_security_group.servers-sg2.id}"]
+
   user_data = <<-EOF
               #!/bin/bash
               echo "Hello World" > index.html
               nohup busybox httpd -f -p "${var.server_port}" &
               EOF
+
   lifecycle {
     create_before_destroy = true
   }
 }
 
-resource "aws_security_group" "tf-sg-instance" {
-  name = "SG-terraform-example-instance"
+resource "aws_security_group" "servers-sg" {
+  name = "SG-for-servers-deployed-by-terraform"
 
   ingress {
     from_port   = "${var.server_port}"
@@ -76,8 +75,23 @@ resource "aws_security_group" "tf-sg-instance" {
   }
 }
 
-resource "aws_security_group" "elb-sg-instance" {
-  name = "elb-terraform-example-instance"
+resource "aws_security_group" "servers-sg2" {
+  name = "a dummy SG just for test"
+
+  ingress {
+    from_port   = "81"
+    to_port     = "81"
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  lifecycle {
+    create_before_destroy = true
+  }
+}
+
+resource "aws_security_group" "for-elb-sg" {
+  name = "elb-deployed-by-terraform"
 
   ingress {
     from_port   = 80
@@ -107,5 +121,5 @@ variable "server_port" {
 
 output "elb_dns_name" {
   description = "Show Elastic load balancer DNS name"
-  value       = "${aws_elb.elb-example.dns_name}"
+  value       = "${aws_elb.my-elb.dns_name}"
 }
