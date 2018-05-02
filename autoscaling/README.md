@@ -1,4 +1,4 @@
 # terraform-test
 
-Repo for Terraform testing purpose
+This contains files to create an autoscaling group with terraform
 
