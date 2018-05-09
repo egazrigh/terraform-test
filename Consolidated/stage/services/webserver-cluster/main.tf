@@ -10,6 +10,16 @@ terraform {
   }
 }
 
+data "terraform_remote_state" "db" {
+  backend = "s3"
+
+  config {
+    bucket = "eg2-s3bucket-for-shared-terraform-tfstate"
+    key    = "stage/datastore/mysql/terraform.tfstate"
+    region = "eu-west-3"
+  }
+}
+
 resource "aws_autoscaling_group" "my-asg" {
   launch_configuration = "${aws_launch_configuration.my-launch-config.id}"
 
@@ -21,9 +31,11 @@ resource "aws_autoscaling_group" "my-asg" {
   min_size = 2
   max_size = 10
 
-  tag {
+  tags {
     key                 = "Name"
-    value               = "web-server-instance-deployed-by-terraform"
+    value               = "webserver-cluster"
+    key                 = "Env"
+    value               = "stage"
     propagate_at_launch = true
   }
 }
@@ -60,6 +72,7 @@ resource "aws_launch_configuration" "my-launch-config" {
   user_data = <<-EOF
               #!/bin/bash
               echo "Hello World" > index.html
+              echo "I will user database ${data.terraform_remote_state.db.db-address} at port ${data.terraform_remote_state.db.db-port}" >> index.html
               nohup busybox httpd -f -p "${var.server_port}" &
               EOF
 
