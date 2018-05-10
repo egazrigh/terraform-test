@@ -4,18 +4,24 @@ variable "server_port" {
   default     = 8080
 }
 
+variable "cluster_name" {
+  description = "The name to use for all the cluster resources"
+}
+
+variable "db_remote_state_bucket" {
+  description = "The name of the s3 bucket for the database's remote state"
+}
+
+variable "db_remote_state_key" {
+  description = "The patch for the database's remote state in S3"
+}
+
 variable "region" {
   description = "The region where to deploy"
-  default     = "eu-west-3"
 }
 
 variable "env" {
   description = "The environement (prod/dev/hml/test)"
-  default     = "stage"
-}
-
-variable "cluster_name" {
-  description = "The name of the cluster to deploy"
 }
 
 data "aws_availability_zones" "all" {}

@@ -15,7 +15,7 @@ terraform {
   backend "s3" {
     # cannot use variable because of early initialization
     bucket = "eg2-s3bucket-for-shared-terraform-tfstate"
-    key    = "stage/services/webserver-cluster/terraform.tfstate"
+    key    = "prod/services/webserver-cluster/terraform.tfstate"
     region = "eu-west-3"
   }
 }

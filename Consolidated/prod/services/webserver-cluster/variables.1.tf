@@ -11,7 +11,7 @@ variable "region" {
 
 variable "env" {
   description = "The environement (prod/dev/hml/test)"
-  default     = "stage"
+  default     = "prod"
 }
 
 variable "cluster_name" {
