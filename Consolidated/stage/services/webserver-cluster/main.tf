@@ -61,6 +61,16 @@ resource "aws_elb" "my-elb" {
   }
 }
 
+data "template_file" "user_data" {
+  template = "${file("user-data.sh")}"
+
+  vars {
+    server_port = "${var.server_port}"
+    db_address  = "${data.terraform_remote_state.db.db-address}"
+    db_port     = "${data.terraform_remote_state.db.db-port}"
+  }
+}
+
 resource "aws_launch_configuration" "my-launch-config" {
   image_id = "ami-0e55e373" #Ubuntu
 
@@ -69,12 +79,7 @@ resource "aws_launch_configuration" "my-launch-config" {
   #security_groups = ["${aws_security_group.servers-sg.id}", "${aws_security_group.servers-sg2.id}"]
   security_groups = ["${aws_security_group.servers-sg.id}"]
 
-  user_data = <<-EOF
-              #!/bin/bash
-              echo "Hello World" > index.html
-              echo "I will user database ${data.terraform_remote_state.db.db-address} at port ${data.terraform_remote_state.db.db-port}" >> index.html
-              nohup busybox httpd -f -p "${var.server_port}" &
-              EOF
+  user_data = "${data.template_file.user_data.rendered}"
 
   lifecycle {
     create_before_destroy = true
