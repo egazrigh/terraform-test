@@ -59,7 +59,7 @@ resource "aws_elb" "my-elb" {
 }
 
 data "template_file" "user_data" {
-  template = "${file("user-data.sh")}"
+  template = "${file("${path.module}/user-data.sh")}"
 
   vars {
     server_port = "${var.server_port}"
@@ -85,32 +85,38 @@ resource "aws_launch_configuration" "my-launch-config" {
 resource "aws_security_group" "servers-sg" {
   name = "${var.cluster_name}-servers_sg"
 
-  ingress {
-    from_port   = "${var.server_port}"
-    to_port     = "${var.server_port}"
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
   lifecycle {
     create_before_destroy = true
   }
 }
 
+resource "aws_security_group_rule" "allow_server_port_in" {
+  type              = "ingress"
+  security_group_id = "${aws_security_group.servers-sg.id}"
+  from_port         = "${var.server_port}"
+  to_port           = "${var.server_port}"
+  protocol          = "tcp"
+  cidr_blocks       = ["0.0.0.0/0"]
+}
+
 resource "aws_security_group" "elb_sg" {
   name = "${var.cluster_name}-elb_sg"
+}
 
-  ingress {
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
+resource "aws_security_group_rule" "allow_http_in" {
+  type              = "ingress"
+  security_group_id = "${aws_security_group.elb_sg.id}"
+  from_port         = 80
+  to_port           = 80
+  protocol          = "tcp"
+  cidr_blocks       = ["0.0.0.0/0"]
+}
 
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
+resource "aws_security_group_rule" "allow_all_out" {
+  type              = "egress"
+  security_group_id = "${aws_security_group.elb_sg.id}"
+  from_port         = 0
+  to_port           = 0
+  protocol          = "-1"
+  cidr_blocks       = ["0.0.0.0/0"]
 }

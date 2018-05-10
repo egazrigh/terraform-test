@@ -11,6 +11,16 @@ module "webserver-cluster" {
   env                    = "${var.env}"
 }
 
+#Add/overload a security group rule to ELB in this environnement
+resource "aws_security_group_rule" "allow_testing_in" {
+  type              = "ingress"
+  security_group_id = "${module.webserver-cluster.elb_ID}"
+  from_port         = 12345
+  to_port           = 12345
+  protocol          = "tcp"
+  cidr_blocks       = ["0.0.0.0/0"]
+}
+
 terraform {
   backend "s3" {
     # cannot use variable because of early initialization
