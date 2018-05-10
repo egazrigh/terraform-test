@@ -1,5 +1,5 @@
 provider "aws" {
-  region = "eu-west-3"
+  region = "${var.region}"
 }
 
 terraform {
@@ -10,11 +10,10 @@ terraform {
   }
 }
 
-resource "aws_db_instance" "mysqldb" {
-  engine            = "mysql"
-  allocated_storage = 10
-  instance_class    = "db.t2.micro"
-  name              = "mysqldb"
-  username          = "admin"
-  password          = "${var.db_password}"
+module "mysqldb" {
+  source       = "../../../../modules/datastore/mysql"
+  cluster_name = "${var.cluster_name}"
+  region       = "${var.region}"
+  env          = "${var.env}"
+  db_password  = "${var.db_password}"
 }

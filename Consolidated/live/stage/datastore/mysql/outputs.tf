@@ -1,7 +1,12 @@
 output "db-address" {
-  value = "${aws_db_instance.mysqldb.address}"
+  value = "${module.mysqldb.db-address}"
 }
 
 output "db-port" {
-  value = "${aws_db_instance.mysqldb.port}"
+  value = "${module.mysqldb.db-port}"
+}
+
+output "db-id" {
+  description = "Show database ID"
+  value       = "${module.mysqldb.db-id}"
 }
