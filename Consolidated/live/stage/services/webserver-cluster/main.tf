@@ -3,12 +3,17 @@ provider "aws" {
 }
 
 module "webserver-cluster" {
-  source                 = "git@github.com:egazrigh/terraform-modules.git//services/webserver-cluster?ref=v0.0.1"
+  source                 = "git@github.com:egazrigh/terraform-modules.git//services/webserver-cluster?ref=v0.0.3"
   cluster_name           = "${var.cluster_name}"
   db_remote_state_bucket = "eg2-s3bucket-for-shared-terraform-tfstate"
   db_remote_state_key    = "${var.env}/datastore/mysql/terraform.tfstate"
   region                 = "${var.region}"
   env                    = "${var.env}"
+  server_port            = "${var.server_port}"
+  enable_autoscaling     = true
+  instance_type          = "${var.instance_type}"
+  asg_min_size           = "${var.asg_min_size}"
+  asg_max_size           = "${var.asg_max_size}"
 }
 
 #Add/overload a security group rule to ELB in this environnement
