@@ -10,6 +10,6 @@ db_password = "HelloWorld!1234"
 
 instance_type = "t2.micro"
 
-asg_min_size = 2
+asg_min_size = 3
 
 asg_max_size = 5

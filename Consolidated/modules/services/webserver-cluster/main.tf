@@ -19,26 +19,40 @@ data "terraform_remote_state" "db" {
 
 resource "aws_autoscaling_group" "my-asg" {
   launch_configuration = "${aws_launch_configuration.my-launch-config.id}"
-
-  availability_zones = ["${data.aws_availability_zones.all.names}"]
+  name                 = "${var.cluster_name}-${var.env}-asg"
+  availability_zones   = ["${data.aws_availability_zones.all.names}"]
 
   load_balancers    = ["${aws_elb.my-elb.name}"]
   health_check_type = "ELB"
 
-  min_size = 2
-  max_size = 10
+  min_size = "${var.asg_min_size}"
+  max_size = "${var.asg_max_size}"
 
-  tags {
-    key                 = "Name"
-    value               = "${var.cluster_name}-webserver-cluster"
-    key                 = "Env"
-    value               = "${var.env}"
-    propagate_at_launch = true
-  }
+  /*
+        tags {
+          key                 = "Name"
+          value               = "${var.cluster_name}-webserver-cluster"
+          key                 = "Env"
+          value               = "${var.env}"
+          propagate_at_launch = true
+        }
+      */
+  tags = [
+    {
+      key                 = "Name"
+      value               = "${var.cluster_name}-webserver-cluster"
+      propagate_at_launch = true
+    },
+    {
+      key                 = "Env"
+      value               = "${var.env}"
+      propagate_at_launch = true
+    },
+  ]
 }
 
 resource "aws_elb" "my-elb" {
-  name               = "${var.cluster_name}-elb"
+  name               = "${var.cluster_name}-${var.env}-elb"
   availability_zones = ["${data.aws_availability_zones.all.names}"]
   security_groups    = ["${aws_security_group.elb_sg.id}"]
 
@@ -56,6 +70,11 @@ resource "aws_elb" "my-elb" {
     interval            = 30
     target              = "HTTP:${var.server_port}/"
   }
+
+  tags {
+    Name = "${var.cluster_name}${var.env}"
+    Env  = "${var.env}"
+  }
 }
 
 data "template_file" "user_data" {
@@ -69,9 +88,9 @@ data "template_file" "user_data" {
 }
 
 resource "aws_launch_configuration" "my-launch-config" {
-  image_id = "ami-0e55e373" #Ubuntu
-
-  instance_type = "t2.micro"
+  image_id      = "ami-0e55e373"                      #Ubuntu
+  name          = "${var.cluster_name}-${var.env}-lc"
+  instance_type = "${var.instance_type}"
 
   security_groups = ["${aws_security_group.servers-sg.id}"]
 
@@ -83,7 +102,12 @@ resource "aws_launch_configuration" "my-launch-config" {
 }
 
 resource "aws_security_group" "servers-sg" {
-  name = "${var.cluster_name}-servers_sg"
+  name = "${var.cluster_name}-${var.env}-servers_sg"
+
+  tags {
+    Name = "${var.cluster_name}-${var.env}-servers_sg"
+    Env  = "${var.env}"
+  }
 
   lifecycle {
     create_before_destroy = true
@@ -100,7 +124,12 @@ resource "aws_security_group_rule" "allow_server_port_in" {
 }
 
 resource "aws_security_group" "elb_sg" {
-  name = "${var.cluster_name}-elb_sg"
+  name = "${var.cluster_name}-${var.env}-elb_sg"
+
+  tags {
+    Name = "${var.cluster_name}-${var.env}-elb_sg"
+    Env  = "${var.env}"
+  }
 }
 
 resource "aws_security_group_rule" "allow_http_in_on_elb" {
@@ -119,4 +148,24 @@ resource "aws_security_group_rule" "allow_all_out_on_elb" {
   to_port           = 0
   protocol          = "-1"
   cidr_blocks       = ["0.0.0.0/0"]
+}
+
+resource "aws_autoscaling_schedule" "scale-out-during-business-hour" {
+  count                  = "${var.enable_autoscaling}"
+  scheduled_action_name  = "scale-out-during-business-hour"
+  min_size               = "${var.asg_min_size}"
+  max_size               = 10                                     # a variabiliser
+  desired_capacity       = 5
+  recurrence             = "0 9 * * *"
+  autoscaling_group_name = "${aws_autoscaling_group.my-asg.name}"
+}
+
+resource "aws_autoscaling_schedule" "scale-in-at-night" {
+  count                  = "${var.enable_autoscaling}"
+  scheduled_action_name  = "scale-in-at-night"
+  min_size               = "${var.asg_min_size}"
+  max_size               = "${var.asg_max_size}"
+  desired_capacity       = "${var.asg_min_size}"
+  recurrence             = "0 17 * * *"
+  autoscaling_group_name = "${aws_autoscaling_group.my-asg.name}"
 }

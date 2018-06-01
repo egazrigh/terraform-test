@@ -9,6 +9,7 @@ module "webserver-cluster" {
   db_remote_state_key    = "${var.env}/datastore/mysql/terraform.tfstate"
   region                 = "${var.region}"
   env                    = "${var.env}"
+  enable_autosclaing     = true
 }
 
 terraform {

@@ -3,8 +3,12 @@ provider "aws" {
 }
 
 module "webserver-cluster" {
-  source                 = "git@github.com:egazrigh/terraform-modules.git//services/webserver-cluster?ref=v0.0.3"
-  cluster_name           = "${var.cluster_name}"
+  #source       = "git@github.com:egazrigh/terraform-modules.git//services/webserver-cluster?ref=v0.0.4"
+  #source       = "..\\..\\..\\modules\\services\\webserver-cluster"
+  source = "../../../modules/services/webserver-cluster"
+
+  cluster_name = "${var.cluster_name}"
+
   db_remote_state_bucket = "eg2-s3bucket-for-shared-terraform-tfstate"
   db_remote_state_key    = "${var.env}/datastore/mysql/terraform.tfstate"
   region                 = "${var.region}"
@@ -16,7 +20,7 @@ module "webserver-cluster" {
   asg_max_size           = "${var.asg_max_size}"
 }
 
-#Add/overload a security group rule to ELB in this environnement
+#Add and overload a security group rule to ELB in this environnement
 resource "aws_security_group_rule" "allow_testing_in" {
   type              = "ingress"
   security_group_id = "${module.webserver-cluster.elb_ID}"
